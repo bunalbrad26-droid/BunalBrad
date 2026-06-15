@@ -224,6 +224,16 @@
         .bb-logo-img   { width: 42px; height: 42px; }
         .bb-brand-sub  { font-size: 10px; }
 
+        /* ── Board: desktop table with smaller sizing ── */
+        .bb-table { min-width: 0 !important; width: 100% !important; font-size: 11px; }
+        .bb-table th, .bb-table td { height: 52px !important; padding: 2px 1px !important; }
+        .bb-th-time { min-width: 72px !important; width: 72px !important; font-size: 10px !important; position: sticky; left: 0; z-index: 3; background: #d8d2c4 !important; }
+        .bb-th-day { font-size: 11px !important; }
+        .bb-th-court { font-size: 9px !important; }
+        .bb-slot { height: 48px !important; font-size: 11px !important; padding: 3px 2px !important; border-radius: 6px !important; }
+        .bb-slot-sub { font-size: 9px !important; }
+        .bb-board-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
         /* ── Parking banner ── */
         .parking-text strong { font-size: 13px; }
         .parking-banner { font-size: 12px; }
@@ -712,7 +722,7 @@
 
         var mobile = isMobile();
 
-        if (mobile) {
+        if (mobile && IN_GAS_IFRAME) {
           buildMobileBoard(data);
         } else {
           buildDesktopBoard(data);
