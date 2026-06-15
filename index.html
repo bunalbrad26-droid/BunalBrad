@@ -693,13 +693,16 @@
           });
       }
 
-      var IFRAME_W = window.innerWidth || 980;
+      // Detect environment: GAS iframe vs GitHub Pages (standalone)
+      // GAS iframe: window.innerWidth ~980 but screen.width ~385
+      // GitHub Pages: window.innerWidth ~385 matches screen.width
+      var IN_GAS_IFRAME = (window.innerWidth > 600 && screen.width < 600);
+      var IFRAME_W = IN_GAS_IFRAME ? window.innerWidth : 980;
       var PHONE_W  = screen.width || 385;
 
-
-
       function isMobile() {
-        return PHONE_W < 600;
+        if (IN_GAS_IFRAME) return PHONE_W < 600;
+        return window.innerWidth < 768;
       }
 
       function buildBoard(data) {
@@ -751,9 +754,12 @@
         var table = document.getElementById('boardTable');
         wrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #c8c0a8;border-radius:10px;background:#ede8dc;width:100%;display:block;';
 
-        // Size: time col + 6 slot cols = exactly 3 days visible before scroll
-        var TW = Math.floor(IFRAME_W * 0.14);
-        var CW = Math.floor((IFRAME_W - TW) / 6.1);
+        // Size columns correctly for both GAS iframe and GitHub Pages
+        // GAS iframe: IFRAME_W ~980, need large px values
+        // GitHub Pages: IFRAME_W ~385, use actual px values
+        var effectiveW = IN_GAS_IFRAME ? IFRAME_W : window.innerWidth;
+        var TW = Math.floor(effectiveW * 0.14);
+        var CW = Math.floor((effectiveW - TW) / 6.1);
 
         // Font sizes proportional to iframe width
         var fDay   = Math.floor(IFRAME_W * 0.020) + 'px';
@@ -1265,9 +1271,8 @@
 
       // Mobile layout — scale body font so everything fits phone width
       (function() {
-        if (screen.width >= 600) return;
-        // Use globals PHONE_W and IFRAME_W
-        // Make content fill full iframe width
+        if (!isMobile()) return;
+        // Make content fill full width
         document.body.style.width = '100%';
         document.body.style.maxWidth = '100%';
         var root = document.getElementById('bb-root');
