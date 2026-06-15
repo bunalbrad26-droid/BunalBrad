@@ -750,6 +750,7 @@
         }
         attachHandlers();
         updateUI();
+        if (isMobile()) applyStickyTimeCol();
 
         // Keep Court Info above Map on mobile
         if (isMobile()) {
@@ -760,6 +761,29 @@
             lower.insertBefore(infCard, mapCard);
           }
         }
+      }
+
+      function applyStickyTimeCol() {
+        var wrap = document.getElementById('boardWrap');
+        var table = document.getElementById('boardTable');
+        if (!wrap || !table) return;
+        // Get all time cells (first cell of each row)
+        var timeCells = table.querySelectorAll('th:first-child, td:first-child');
+        timeCells.forEach(function(cell) {
+          cell.style.position = 'relative';
+          cell.style.zIndex = '3';
+          cell.style.background = '#d8d2c4';
+          cell.style.minWidth = isMobile() ? '85px' : '110px';
+          cell.style.maxWidth = isMobile() ? '85px' : '110px';
+          cell.style.boxShadow = '3px 0 6px rgba(0,0,0,0.12)';
+        });
+        // On scroll, shift time cells to follow scroll position
+        wrap.addEventListener('scroll', function() {
+          var scrollLeft = wrap.scrollLeft;
+          timeCells.forEach(function(cell) {
+            cell.style.transform = 'translateX(' + scrollLeft + 'px)';
+          });
+        });
       }
 
       function buildDesktopBoard(data) {
