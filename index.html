@@ -81,7 +81,7 @@
 
       /* ── BOARD ── */
       .bb-board-wrap { overflow-x: auto; overflow-y: visible; border: 1px solid #c8c0a8; border-radius: 12px; background: #ede8dc; -webkit-overflow-scrolling: touch; max-width: 100%; }
-      .bb-table { border-collapse: collapse; width: 100%; min-width: 1100px; }
+      .bb-table { border-collapse: collapse; width: 100%; min-width: 600px; }
       .bb-table th, .bb-table td { border: 1px solid #d4ccb8; text-align: center; padding: 3px; vertical-align: middle; height: 60px; min-width: 80px; }
       .bb-table th { background: #e2dcd0; position: sticky; top: 0; z-index: 2; height: auto; }
       .bb-th-time  { background: #d8d2c4 !important; font-weight: 700; font-size: 12px; color: #4a4436; min-width: 110px; position: sticky; left: 0; z-index: 3; }
@@ -224,15 +224,15 @@
         .bb-logo-img   { width: 42px; height: 42px; }
         .bb-brand-sub  { font-size: 10px; }
 
-        /* ── Board: desktop table with smaller sizing ── */
-        .bb-table { min-width: 0 !important; width: 100% !important; font-size: 11px; }
-        .bb-table th, .bb-table td { height: 52px !important; padding: 2px 1px !important; }
-        .bb-th-time { min-width: 72px !important; width: 72px !important; font-size: 10px !important; position: sticky; left: 0; z-index: 3; background: #d8d2c4 !important; }
-        .bb-th-day { font-size: 11px !important; }
-        .bb-th-court { font-size: 9px !important; }
-        .bb-slot { height: 48px !important; font-size: 11px !important; padding: 3px 2px !important; border-radius: 6px !important; }
-        .bb-slot-sub { font-size: 9px !important; }
+        /* ── Board: scrollable on mobile ── */
         .bb-board-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .bb-table { min-width: 0 !important; font-size: 11px; }
+        .bb-table th, .bb-table td { height: 54px !important; padding: 2px 1px !important; min-width: 0 !important; width: 60px !important; }
+        .bb-th-time { min-width: 72px !important; width: 72px !important; max-width: 72px !important; font-size: 10px !important; white-space: normal !important; }
+        .bb-th-day { font-size: 12px !important; }
+        .bb-th-court { font-size: 9px !important; }
+        .bb-slot { height: 50px !important; font-size: 11px !important; padding: 3px 2px !important; border-radius: 6px !important; width: 100% !important; }
+        .bb-slot-sub { font-size: 9px !important; max-width: 56px !important; }
 
         /* ── Parking banner ── */
         .parking-text strong { font-size: 13px; }
@@ -637,14 +637,31 @@
         try {
           const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&hourly=precipitation_probability,weathercode&timezone=Asia%2FManila&forecast_days=1';
           const res  = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
           const json = await res.json();
+          if (!json.hourly) throw new Error('No hourly data');
           const times = json.hourly.time;
           const prec  = json.hourly.precipitation_probability;
           const codes = json.hourly.weathercode;
           times.forEach((t, i) => { weatherData[t] = { precip: prec[i], code: codes[i] }; });
           renderWeatherBar();
         } catch(e) {
-          document.getElementById('weatherSlots').innerHTML = '<span class="weather-loading">Weather unavailable</span>';
+          console.log('Weather error:', e);
+          // Retry once after 3 seconds
+          setTimeout(async function() {
+            try {
+              const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&hourly=precipitation_probability,weathercode&timezone=Asia%2FManila&forecast_days=1';
+              const res  = await fetch(url);
+              const json = await res.json();
+              const times = json.hourly.time;
+              const prec  = json.hourly.precipitation_probability;
+              const codes = json.hourly.weathercode;
+              times.forEach((t, i) => { weatherData[t] = { precip: prec[i], code: codes[i] }; });
+              renderWeatherBar();
+            } catch(e2) {
+              document.getElementById('weatherSlots').innerHTML = '<span class="weather-loading">Weather unavailable</span>';
+            }
+          }, 3000);
         }
       }
 
