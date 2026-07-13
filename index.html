@@ -77,7 +77,7 @@
       .bb-board-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #c8c0a8; border-radius: 12px; background: #ede8dc; max-width: 100%; }
       .bb-table { border-collapse: collapse; width: 100%; min-width: 600px; }
       .bb-table th, .bb-table td { border: 1px solid #d4ccb8; text-align: center; padding: 3px; vertical-align: middle; height: 60px; min-width: 80px; }
-      .bb-table th { background: #e2dcd0; position: sticky; top: 0; z-index: 2; height: auto; }
+      .bb-table th { background: #e2dcd0; height: auto; }
       .bb-th-time  { background: #d8d2c4 !important; font-weight: 700; font-size: 12px; color: #4a4436; min-width: 110px; }
       .bb-th-day   { font-family: 'EB Garamond', Georgia, serif; font-size: 15px; font-weight: 700; color: #2c4a2e; }
       .bb-th-court { font-size: 11px; color: #7a7060; margin-top: 2px; }
@@ -552,22 +552,32 @@
         currentMode = id;
       }
 
+      // ---- Weather: fetch with timeout, retry once, fall back gracefully ----
+      function fetchWeatherOnce() {
+        var controller = new AbortController();
+        var timeoutId  = setTimeout(function() { controller.abort(); }, 8000);
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&hourly=precipitation_probability,weathercode&timezone=Asia%2FManila&forecast_days=1';
+        return fetch(url, { signal: controller.signal })
+          .then(function(res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .finally(function() { clearTimeout(timeoutId); });
+      }
+
       async function loadWeather() {
         try {
-          var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&hourly=precipitation_probability,weathercode&timezone=Asia%2FManila&forecast_days=1';
-          var res  = await fetch(url);
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          var json = await res.json();
+          var json = await fetchWeatherOnce();
           if (!json.hourly) throw new Error('No hourly data');
           json.hourly.time.forEach(function(t, i) { weatherData[t] = { precip: json.hourly.precipitation_probability[i], code: json.hourly.weathercode[i] }; });
           renderWeatherBar();
         } catch(e) {
           setTimeout(async function() {
             try {
-              var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&hourly=precipitation_probability,weathercode&timezone=Asia%2FManila&forecast_days=1';
-              var res  = await fetch(url);
-              var json = await res.json();
-              json.hourly.time.forEach(function(t, i) { weatherData[t] = { precip: json.hourly.precipitation_probability[i], code: json.hourly.weathercode[i] }; });
+              var json2 = await fetchWeatherOnce();
+              if (!json2.hourly) throw new Error('No hourly data');
+              json2.hourly.time.forEach(function(t, i) { weatherData[t] = { precip: json2.hourly.precipitation_probability[i], code: json2.hourly.weathercode[i] }; });
               renderWeatherBar();
             } catch(e2) {
               document.getElementById('weatherSlots').innerHTML = '<span class="weather-loading">Weather unavailable</span>';
@@ -584,7 +594,9 @@
       }
 
       function renderWeatherBar() {
-        var today = new Date().toISOString().slice(0, 10);
+        // Use Manila's local date, not the browser's UTC date, so keys line up
+        // with Open-Meteo's Asia/Manila-timezoned response.
+        var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
         var slots = [];
         for (var h = REGULAR_START; h < SAT_END; h++) {
           var pad = h < 10 ? '0' + h : '' + h;
@@ -642,6 +654,14 @@
         }
       }
 
+      // Splits "5:00 PM - 6:00 PM" into "5:00 PM-" / "6:00 PM" on two forced lines,
+      // instead of letting the browser wrap wherever it finds room.
+      function formatTimeLabel(tl) {
+        var parts = tl.split(' - ');
+        if (parts.length !== 2) return esc(tl);
+        return '<span style="white-space:nowrap;">' + esc(parts[0]) + '-</span><br><span style="white-space:nowrap;">' + esc(parts[1]) + '</span>';
+      }
+
       function buildDesktopBoard(data) {
         var wrap = document.getElementById('boardWrap');
         wrap.style.position = 'relative';
@@ -657,7 +677,7 @@
         // Time column (fixed left)
         var timeHead = '<thead><tr><th class="bb-th-time" style="height:' + (isMobile()?40:50) + 'px;">Time</th></tr></thead>';
         var timeTbody = '<tbody>' + timeRows.map(function(tl) {
-          return '<tr><td class="bb-th-time" style="height:' + ROWH + 'px;font-size:' + (isMobile()?'10px':'12px') + ';line-height:1.3;padding:3px 4px;">' + esc(tl) + '</td></tr>';
+          return '<tr><td class="bb-th-time" style="height:' + ROWH + 'px;font-size:' + (isMobile()?'10px':'12px') + ';line-height:1.3;padding:3px 4px;">' + formatTimeLabel(tl) + '</td></tr>';
         }).join('') + '</tbody>';
 
         // Data table (scrollable)
@@ -748,7 +768,7 @@
             var c2 = findCell(data.grid, d.key, tl, 'Court 2');
             return renderMobileCell(c1, fSlot, fSub, slotH) + renderMobileCell(c2, fSlot, fSub, slotH);
           }).join('');
-          return '<tr><td style="width:' + TW + 'px;min-width:' + TW + 'px;position:sticky;left:0;z-index:3;background:#d8d2c4;font-size:' + fTime + ';font-weight:700;color:#4a4436;text-align:center;padding:4px 3px;line-height:1.3;vertical-align:middle;height:' + rowH + ';">' + esc(tl) + '</td>' + cells + '</tr>';
+          return '<tr><td style="width:' + TW + 'px;min-width:' + TW + 'px;position:sticky;left:0;z-index:3;background:#d8d2c4;font-size:' + fTime + ';font-weight:700;color:#4a4436;text-align:center;padding:4px 3px;line-height:1.3;vertical-align:middle;height:' + rowH + ';">' + formatTimeLabel(tl) + '</td>' + cells + '</tr>';
         }).join('') + '</tbody>';
 
         table.style.cssText = 'border-collapse:collapse;width:max-content;table-layout:fixed;';
