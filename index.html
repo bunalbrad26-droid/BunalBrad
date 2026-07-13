@@ -665,18 +665,22 @@
         var TW, CW, fDay, fDate, fCourt, fTime, fSlot, fSub, slotH, rowH;
 
         if (isMobile()) {
+          // Use the real viewport width for sizing. IFRAME_W's 980px fallback
+          // exists only for the Google Sites/Apps Script iframe embed case
+          // (where window.innerWidth misreports); on standalone GitHub Pages,
+          // window.innerWidth is already the true device width.
           var effectiveW = IN_GAS_IFRAME ? IFRAME_W : window.innerWidth;
           TW = Math.floor(effectiveW * 0.14);
           CW = Math.floor((effectiveW - TW) / 6.1);
 
-          fDay   = Math.floor(IFRAME_W * 0.020) + 'px';
-          fDate  = Math.floor(IFRAME_W * 0.015) + 'px';
-          fCourt = Math.floor(IFRAME_W * 0.013) + 'px';
-          fTime  = Math.floor(IFRAME_W * 0.015) + 'px';
-          fSlot  = Math.floor(IFRAME_W * 0.017) + 'px';
-          fSub   = Math.floor(IFRAME_W * 0.013) + 'px';
-          slotH  = Math.floor(IFRAME_W * 0.082) + 'px';
-          rowH   = Math.floor(IFRAME_W * 0.088) + 'px';
+          fDay   = Math.floor(effectiveW * 0.020) + 'px';
+          fDate  = Math.floor(effectiveW * 0.015) + 'px';
+          fCourt = Math.floor(effectiveW * 0.013) + 'px';
+          fTime  = Math.floor(effectiveW * 0.015) + 'px';
+          fSlot  = Math.floor(effectiveW * 0.017) + 'px';
+          fSub   = Math.floor(effectiveW * 0.013) + 'px';
+          slotH  = Math.floor(effectiveW * 0.082) + 'px';
+          rowH   = Math.floor(effectiveW * 0.088) + 'px';
         } else {
           // Fixed, comfortable sizes for mouse/desktop use — no viewport scaling needed.
           TW = 110;
