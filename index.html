@@ -682,11 +682,17 @@
           slotH  = Math.max(44, Math.floor(effectiveW * 0.082)) + 'px';
           rowH   = Math.max(48, Math.floor(effectiveW * 0.088)) + 'px';
         } else {
-          // Fixed, comfortable sizes for mouse/desktop use — no viewport scaling needed.
-          TW = 110;
-          CW = 100;
+          // Desktop: fit the entire week (no horizontal scroll needed) by
+          // dividing the actual available width across all day/court columns,
+          // instead of using fixed pixel widths.
+          var containerW    = wrap.clientWidth || window.innerWidth;
+          var numCourtCols   = data.days.length * 2;
+          TW = 100;
+          CW = Math.max(60, Math.floor((containerW - TW - 20) / numCourtCols));
           fDay = '15px'; fDate = '12px'; fCourt = '11px'; fTime = '13px';
-          fSlot = '13px'; fSub = '11px'; slotH = '54px'; rowH = '60px';
+          fSlot = Math.max(10, Math.min(13, Math.floor(CW * 0.14))) + 'px';
+          fSub  = Math.max(9,  Math.min(11, Math.floor(CW * 0.11))) + 'px';
+          slotH = '54px'; rowH = '60px';
         }
 
         var colgroup = '<colgroup><col style="width:' + TW + 'px;min-width:' + TW + 'px;">' +
