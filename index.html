@@ -663,6 +663,7 @@
         wrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #c8c0a8;border-radius:10px;background:#ede8dc;width:100%;display:block;';
 
         var TW, CW, fDay, fDate, fCourt, fTime, fSlot, fSub, slotH, rowH;
+        var numCourtCols = data.days.length * 2;
 
         if (isMobile()) {
           // Use the real viewport width for sizing. IFRAME_W's 980px fallback
@@ -685,8 +686,7 @@
           // Desktop: fit the entire week (no horizontal scroll needed) by
           // dividing the actual available width across all day/court columns,
           // instead of using fixed pixel widths.
-          var containerW    = wrap.clientWidth || window.innerWidth;
-          var numCourtCols   = data.days.length * 2;
+          var containerW = wrap.clientWidth || window.innerWidth;
           TW = 100;
           CW = Math.max(60, Math.floor((containerW - TW - 20) / numCourtCols));
           fDay = '15px'; fDate = '12px'; fCourt = '11px'; fTime = '13px';
@@ -695,9 +695,17 @@
           slotH = '54px'; rowH = '60px';
         }
 
+        // Mobile keeps fixed pixel columns (intentional horizontal scroll).
+        // Desktop uses fluid percentage columns so the table exactly fills
+        // the container with no leftover gap on the right.
+        var colWidthCss = isMobile()
+          ? (CW + 'px')
+          : ('calc((100% - ' + TW + 'px) / ' + numCourtCols + ')');
+        var tableWidthCss = isMobile() ? 'width:max-content;' : 'width:100%;';
+
         var colgroup = '<colgroup><col style="width:' + TW + 'px;min-width:' + TW + 'px;">' +
           data.days.map(function() {
-            return '<col style="width:' + CW + 'px;min-width:' + CW + 'px;"><col style="width:' + CW + 'px;min-width:' + CW + 'px;">';
+            return '<col style="width:' + colWidthCss + ';"><col style="width:' + colWidthCss + ';">';
           }).join('') + '</colgroup>';
 
         var thead = '<thead><tr>' +
@@ -706,7 +714,7 @@
             var parts = d.label.split(',');
             var dayName = parts[0] ? parts[0].trim() : d.label;
             var dayDate = parts[1] ? parts[1].trim() : '';
-            return '<th colspan="2" style="width:' + (CW*2) + 'px;min-width:' + (CW*2) + 'px;padding:8px 2px;text-align:center;border-bottom:1px solid #c8c0a8;">' +
+            return '<th colspan="2" style="padding:8px 2px;text-align:center;border-bottom:1px solid #c8c0a8;">' +
               '<div style="font-size:' + fDay + ';font-weight:700;color:#2c4a2e;">' + esc(dayName) + '</div>' +
               '<div style="font-size:' + fDate + ';color:#7a7060;">' + esc(dayDate) + '</div>' +
               '<div style="font-size:' + fCourt + ';color:#a09880;margin-top:1px;">Court 1 &nbsp;&middot;&nbsp; Court 2</div>' +
@@ -722,7 +730,7 @@
           return '<tr><td style="width:' + TW + 'px;min-width:' + TW + 'px;position:sticky;left:0;z-index:3;background:#d8d2c4;font-size:' + fTime + ';font-weight:700;color:#4a4436;text-align:center;padding:4px 3px;line-height:1.3;vertical-align:middle;height:' + rowH + ';">' + formatTimeLabel(tl) + '</td>' + cells + '</tr>';
         }).join('') + '</tbody>';
 
-        table.style.cssText = 'border-collapse:separate;border-spacing:0;width:max-content;table-layout:fixed;';
+        table.style.cssText = 'border-collapse:separate;border-spacing:0;table-layout:fixed;' + tableWidthCss;
         table.innerHTML = colgroup + thead + tbody;
 
         // Scroll progress bar
