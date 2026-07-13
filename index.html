@@ -622,24 +622,19 @@
         document.getElementById('statusEl').style.display  = 'none';
         document.getElementById('boardWrap').style.display = 'block';
 
-        if (isMobile() && IN_GAS_IFRAME) {
-          buildMobileBoard(data);
-        } else {
-          buildDesktopBoard(data);
-          // Show swipe hint on mobile GitHub Pages
-          if (isMobile()) {
-            document.getElementById('swipeHint').style.display = 'block';
-            var wrap = document.getElementById('boardWrap');
-            wrap.onscroll = function() {
-              var bar = document.getElementById('swipeBar');
-              if (!bar) return;
-              var max = wrap.scrollWidth - wrap.clientWidth;
-              if (max <= 0) return;
-              var pct = wrap.scrollLeft / max;
-              bar.style.marginLeft = (pct * 70) + '%';
-            };
-          }
-        }
+        buildUnifiedBoard(data);
+        document.getElementById('swipeHint').style.display = 'block';
+        (function() {
+          var wrap = document.getElementById('boardWrap');
+          wrap.onscroll = function() {
+            var bar = document.getElementById('swipeBar');
+            if (!bar) return;
+            var max = wrap.scrollWidth - wrap.clientWidth;
+            if (max <= 0) return;
+            var pct = wrap.scrollLeft / max;
+            bar.style.marginLeft = (pct * 70) + '%';
+          };
+        })();
         attachHandlers();
         updateUI();
 
@@ -662,87 +657,33 @@
         return '<span style="white-space:nowrap;">' + esc(parts[0]) + '-</span><br><span style="white-space:nowrap;">' + esc(parts[1]) + '</span>';
       }
 
-      function buildDesktopBoard(data) {
-        var wrap = document.getElementById('boardWrap');
-        wrap.style.position = 'relative';
-        wrap.style.overflowX = 'hidden'; // outer wrap doesn't scroll
-
-        // Build time column labels
-        var timeRows = data.timeRows;
-
-        // Build HTML: fixed time col + scrollable data
-        var TIMEW = isMobile() ? 72 : 110;
-        var ROWH  = isMobile() ? 52 : 60;
-
-        // Time column (fixed left)
-        var timeHead = '<thead><tr><th class="bb-th-time" style="height:' + (isMobile()?40:50) + 'px;">Time</th></tr></thead>';
-        var timeTbody = '<tbody>' + timeRows.map(function(tl) {
-          return '<tr><td class="bb-th-time" style="height:' + ROWH + 'px;font-size:' + (isMobile()?'10px':'12px') + ';line-height:1.3;padding:3px 4px;">' + formatTimeLabel(tl) + '</td></tr>';
-        }).join('') + '</tbody>';
-
-        // Data table (scrollable)
-        var thead = '<thead><tr>' +
-          data.days.map(function(d) {
-            return '<th colspan="2" style="height:' + (isMobile()?40:50) + 'px;"><div class="bb-th-day">' + esc(d.label) + '</div><div class="bb-th-court">Court 1 &nbsp;&middot;&nbsp; Court 2</div></th>';
-          }).join('') + '</tr></thead>';
-
-        var rows = timeRows.map(function(tl) {
-          var cells = data.days.map(function(d) {
-            var c1 = findCell(data.grid, d.key, tl, 'Court 1');
-            var c2 = findCell(data.grid, d.key, tl, 'Court 2');
-            return renderCell(c1) + renderCell(c2);
-          }).join('');
-          return '<tr style="height:' + ROWH + 'px;">' + cells + '</tr>';
-        }).join('');
-
-        var html = '<div style="display:flex;">' +
-          // Fixed time column
-          '<div style="flex-shrink:0;z-index:2;box-shadow:2px 0 6px rgba(0,0,0,0.1);">' +
-            '<table class="bb-table" style="width:' + TIMEW + 'px;min-width:' + TIMEW + 'px;border-right:none;">' +
-              timeHead + timeTbody +
-            '</table>' +
-          '</div>' +
-          // Scrollable data
-          '<div style="overflow-x:auto;flex:1;-webkit-overflow-scrolling:touch;" id="dataScroll">' +
-            '<table class="bb-table" id="dataTable" style="min-width:' + (isMobile()?400:800) + 'px;">' +
-              thead + '<tbody>' + rows + '</tbody>' +
-            '</table>' +
-          '</div>' +
-        '</div>';
-
-        document.getElementById('boardTable').style.display = 'none';
-        wrap.innerHTML = html;
-
-        // Sync scroll bar
-        var dataScroll = document.getElementById('dataScroll');
-        if (dataScroll) {
-          dataScroll.addEventListener('scroll', function() {
-            var bar = document.getElementById('swipeBar');
-            if (!bar) return;
-            var max = dataScroll.scrollWidth - dataScroll.clientWidth;
-            if (max <= 0) return;
-            bar.style.marginLeft = (dataScroll.scrollLeft / max * 70) + '%';
-          });
-        }
-      }
-
-      function buildMobileBoard(data) {
+      function buildUnifiedBoard(data) {
         var wrap  = document.getElementById('boardWrap');
         var table = document.getElementById('boardTable');
         wrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #c8c0a8;border-radius:10px;background:#ede8dc;width:100%;display:block;';
 
-        var effectiveW = IN_GAS_IFRAME ? IFRAME_W : window.innerWidth;
-        var TW = Math.floor(effectiveW * 0.14);
-        var CW = Math.floor((effectiveW - TW) / 6.1);
+        var TW, CW, fDay, fDate, fCourt, fTime, fSlot, fSub, slotH, rowH;
 
-        var fDay   = Math.floor(IFRAME_W * 0.020) + 'px';
-        var fDate  = Math.floor(IFRAME_W * 0.015) + 'px';
-        var fCourt = Math.floor(IFRAME_W * 0.013) + 'px';
-        var fTime  = Math.floor(IFRAME_W * 0.015) + 'px';
-        var fSlot  = Math.floor(IFRAME_W * 0.017) + 'px';
-        var fSub   = Math.floor(IFRAME_W * 0.013) + 'px';
-        var slotH  = Math.floor(IFRAME_W * 0.082) + 'px';
-        var rowH   = Math.floor(IFRAME_W * 0.088) + 'px';
+        if (isMobile()) {
+          var effectiveW = IN_GAS_IFRAME ? IFRAME_W : window.innerWidth;
+          TW = Math.floor(effectiveW * 0.14);
+          CW = Math.floor((effectiveW - TW) / 6.1);
+
+          fDay   = Math.floor(IFRAME_W * 0.020) + 'px';
+          fDate  = Math.floor(IFRAME_W * 0.015) + 'px';
+          fCourt = Math.floor(IFRAME_W * 0.013) + 'px';
+          fTime  = Math.floor(IFRAME_W * 0.015) + 'px';
+          fSlot  = Math.floor(IFRAME_W * 0.017) + 'px';
+          fSub   = Math.floor(IFRAME_W * 0.013) + 'px';
+          slotH  = Math.floor(IFRAME_W * 0.082) + 'px';
+          rowH   = Math.floor(IFRAME_W * 0.088) + 'px';
+        } else {
+          // Fixed, comfortable sizes for mouse/desktop use — no viewport scaling needed.
+          TW = 110;
+          CW = 100;
+          fDay = '15px'; fDate = '12px'; fCourt = '11px'; fTime = '13px';
+          fSlot = '13px'; fSub = '11px'; slotH = '54px'; rowH = '60px';
+        }
 
         var colgroup = '<colgroup><col style="width:' + TW + 'px;min-width:' + TW + 'px;">' +
           data.days.map(function() {
@@ -827,8 +768,7 @@
       }
 
       function attachHandlers() {
-        // Slots can be in boardTable (mobile) or dataTable (desktop two-table layout)
-        var container = document.getElementById('dataTable') || document.getElementById('boardTable');
+        var container = document.getElementById('boardTable');
         if (!container) return;
         container.querySelectorAll('.slot-avail, .slot-selected').forEach(function(el) {
           el.addEventListener('click', function() { toggleSlot(el.dataset.slot, el.dataset.day, el.dataset.court); });
