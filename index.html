@@ -673,14 +673,14 @@
           TW = Math.floor(effectiveW * 0.14);
           CW = Math.floor((effectiveW - TW) / 6.1);
 
-          fDay   = Math.floor(effectiveW * 0.020) + 'px';
-          fDate  = Math.floor(effectiveW * 0.015) + 'px';
-          fCourt = Math.floor(effectiveW * 0.013) + 'px';
-          fTime  = Math.floor(effectiveW * 0.015) + 'px';
-          fSlot  = Math.floor(effectiveW * 0.017) + 'px';
-          fSub   = Math.floor(effectiveW * 0.013) + 'px';
-          slotH  = Math.floor(effectiveW * 0.082) + 'px';
-          rowH   = Math.floor(effectiveW * 0.088) + 'px';
+          fDay   = Math.max(13, Math.floor(effectiveW * 0.020)) + 'px';
+          fDate  = Math.max(11, Math.floor(effectiveW * 0.015)) + 'px';
+          fCourt = Math.max(9,  Math.floor(effectiveW * 0.013)) + 'px';
+          fTime  = Math.max(10, Math.floor(effectiveW * 0.015)) + 'px';
+          fSlot  = Math.max(11, Math.floor(effectiveW * 0.017)) + 'px';
+          fSub   = Math.max(9,  Math.floor(effectiveW * 0.013)) + 'px';
+          slotH  = Math.max(44, Math.floor(effectiveW * 0.082)) + 'px';
+          rowH   = Math.max(48, Math.floor(effectiveW * 0.088)) + 'px';
         } else {
           // Fixed, comfortable sizes for mouse/desktop use — no viewport scaling needed.
           TW = 110;
@@ -716,7 +716,7 @@
           return '<tr><td style="width:' + TW + 'px;min-width:' + TW + 'px;position:sticky;left:0;z-index:3;background:#d8d2c4;font-size:' + fTime + ';font-weight:700;color:#4a4436;text-align:center;padding:4px 3px;line-height:1.3;vertical-align:middle;height:' + rowH + ';">' + formatTimeLabel(tl) + '</td>' + cells + '</tr>';
         }).join('') + '</tbody>';
 
-        table.style.cssText = 'border-collapse:collapse;width:max-content;table-layout:fixed;';
+        table.style.cssText = 'border-collapse:separate;border-spacing:0;width:max-content;table-layout:fixed;';
         table.innerHTML = colgroup + thead + tbody;
 
         // Scroll progress bar
